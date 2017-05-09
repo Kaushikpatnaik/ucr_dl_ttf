@@ -26,6 +26,7 @@ def readucr(filename):
 
 nb_epochs = 2000
 all_result_file = 'all_results.txt'
+direc = 'UCR_TS_Archive_2015'
 
 flist = ['Adiac', 'Beef', 'CBF', 'ChlorineConcentration', 'CinC_ECG_torso', 'Coffee', 'Cricket_X', 'Cricket_Y', 'Cricket_Z',
 'DiatomSizeReduction', 'ECGFiveDays', 'FaceAll', 'FaceFour', 'FacesUCR', '50words', 'FISH', 'Gun_Point', 'Haptics',
@@ -36,8 +37,8 @@ flist = ['Adiac', 'Beef', 'CBF', 'ChlorineConcentration', 'CinC_ECG_torso', 'Cof
 #flist  = ['Adiac']
 for each in flist:
     fname = each
-    x_train, y_train = readucr(fname+'/'+fname+'_TRAIN')
-    x_test, y_test = readucr(fname+'/'+fname+'_TEST')
+    x_train, y_train = readucr(direc+'/'+fname+'/'+fname+'_TRAIN')
+    x_test, y_test = readucr(direc+'/'+fname+'/'+fname+'_TEST')
     nb_classes = len(np.unique(y_test))
     batch_size = min(x_train.shape[0]/10, 16)
 
