@@ -58,17 +58,22 @@ for each in flist:
 
     x = keras.layers.Input(x_train.shape[1:])
 #    drop_out = Dropout(0.2)(x)
-    conv1 = keras.layers.Conv1D(128, 8, border_mode='same')(x)
+    conv1 = keras.layers.Conv1D(128, 8, padding='causal')(x)
     conv1 = keras.layers.normalization.BatchNormalization()(conv1)
     conv1 = keras.layers.Activation('relu')(conv1)
 
 #    drop_out = Dropout(0.2)(conv1)
-    conv2 = keras.layers.Conv1D(256, 5, border_mode='same')(conv1)
+    conv2 = keras.layers.Conv1D(256, 5, padding='causal')(conv1)
     conv2 = keras.layers.normalization.BatchNormalization()(conv2)
     conv2 = keras.layers.Activation('relu')(conv2)
 
-    lstm_layer = keras.layers.LSTM(48)(conv2)
-    out = keras.layers.Dense(nb_classes, activation='softmax')(lstm_layer)
+#    drop_out = Dropout(0.2)(conv2)
+    conv3 = keras.layers.Conv1D(128, 3, padding='causal')(conv2)
+    conv3 = keras.layers.normalization.BatchNormalization()(conv3)
+    conv3 = keras.layers.Activation('relu')(conv3)
+
+    full = keras.layers.pooling.GlobalAveragePooling1D()(conv3)
+    out = keras.layers.Dense(nb_classes, activation='softmax')(full)
 
     model = Model(input=x, output=out)
 
@@ -86,10 +91,10 @@ for each in flist:
 
     #Print the testing results which has the lowest training loss.
     log = pd.DataFrame(hist.history)
-    log.to_csv('./history/'+fname+'_FCN_LSTM_all_history.csv')
+    log.to_csv('./history/'+fname+'_FCN_Causal_all_history.csv')
 
     with open(all_result_file,"a") as f:
-        f.write(fname+", FCN_LSTM"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
+        f.write(fname+", FCN_Causal"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
                 +str(log.loc[log['loss'].idxmin]['val_acc'])+"\n")
 
     # summarize history for accuracy
@@ -99,7 +104,7 @@ for each in flist:
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('./history/'+fname+'_FCN_LSTM_model_accuracy.png')
+    plt.savefig('./history/'+fname+'_FCN_Causal_model_accuracy.png')
     plt.close()
     # summarize history for loss
     plt.plot(log['loss'])
@@ -108,4 +113,4 @@ for each in flist:
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('./history/'+fname+'_FCN_LSTM_model_loss.png')
+    plt.savefig('./history/'+fname+'_FCN_Causal_model_loss.png')

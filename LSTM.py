@@ -3,7 +3,7 @@ import numpy as np
 
 from keras.preprocessing import sequence
 from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional
+from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, BatchNormalization
 from keras.utils import np_utils
 import keras
 import pandas as pd
@@ -16,7 +16,8 @@ def readucr(filename):
     X = data[:,1:]
     return X, Y
 
-nb_epochs = 200
+nb_epochs = 2000
+all_result_file = 'all_results.txt'
 
 flist  = ['Adiac']
 for each in flist:
@@ -44,8 +45,9 @@ for each in flist:
     print(x_train.shape)
 
     model = Sequential()
-    model.add(Bidirectional(LSTM(64), input_shape=x_train.shape[1:]))
-    #model.add(Dropout(0.5))
+    model.add(LSTM(48, input_shape=x_train.shape[1:], return_sequences=True))
+    model.add(BatchNormalization())
+    model.add(LSTM(48))
     model.add(keras.layers.Dense(nb_classes, activation='softmax'))
 
     optimizer = keras.optimizers.Adam()
@@ -62,7 +64,11 @@ for each in flist:
 
     #Print the testing results which has the lowest training loss.
     log = pd.DataFrame(hist.history)
-    print(log.loc[log['loss'].idxmin]['loss'], log.loc[log['loss'].idxmin]['val_acc'])
+    log.to_csv('./history/'+fname+'_LSTM_all_history.csv')
+
+    with open(all_result_file,"a") as f:
+        f.write(fname+", LSTM"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
+                +str(log.loc[log['loss'].idxmin]['val_acc'])+"\n")
 
     # summarize history for accuracy
     plt.plot(log['acc'])
@@ -71,7 +77,8 @@ for each in flist:
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.savefig('./history/'+fname+'_LSTM_model_accuracy.png')
+    plt.close()
     # summarize history for loss
     plt.plot(log['loss'])
     plt.plot(log['val_loss'])
@@ -79,4 +86,4 @@ for each in flist:
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.savefig('./history/'+fname+'_LSTM_model_loss.png')

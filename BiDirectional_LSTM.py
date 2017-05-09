@@ -1,22 +1,14 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Oct 30 20:11:19 2016
-
-@author: stephen
-"""
-
 from __future__ import print_function
-
-from keras.models import Model
-from keras.utils import np_utils
 import numpy as np
-import pandas as pd
-from sklearn.metrics import classification_report
-import matplotlib.pyplot as plt
 
+from keras.preprocessing import sequence
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Embedding, LSTM, Bidirectional, BatchNormalization
+from keras.utils import np_utils
 import keras
+import pandas as pd
 from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+import matplotlib.pyplot as plt
 
 def readucr(filename):
     data = np.loadtxt(filename, delimiter = ',')
@@ -26,12 +18,6 @@ def readucr(filename):
 
 nb_epochs = 2000
 all_result_file = 'all_results.txt'
-
-#flist = ['Adiac', 'Beef', 'CBF', 'ChlorineConcentration', 'CinC_ECG_torso', 'Coffee', 'Cricket_X', 'Cricket_Y', 'Cricket_Z',
-#'DiatomSizeReduction', 'ECGFiveDays', 'FaceAll', 'FaceFour', 'FacesUCR', '50words', 'FISH', 'Gun_Point', 'Haptics',
-#'InlineSkate', 'ItalyPowerDemand', 'Lighting2', 'Lighting7', 'MALLAT', 'MedicalImages', 'MoteStrain', 'NonInvasiveFatalECG_Thorax1',
-#'NonInvasiveFatalECG_Thorax2', 'OliveOil', 'OSULeaf', 'SonyAIBORobotSurface', 'SonyAIBORobotSurfaceII', 'StarLightCurves', 'SwedishLeaf', 'Symbols',
-#'synthetic_control', 'Trace', 'TwoLeadECG', 'Two_Patterns', 'uWaveGestureLibrary_X', 'uWaveGestureLibrary_Y', 'uWaveGestureLibrary_Z', 'wafer', 'WordsSynonyms', 'yoga']
 
 flist  = ['Adiac']
 for each in flist:
@@ -56,21 +42,13 @@ for each in flist:
     x_train = x_train.reshape(x_train.shape + (1,))
     x_test = x_test.reshape(x_test.shape + (1,))
 
-    x = keras.layers.Input(x_train.shape[1:])
-#    drop_out = Dropout(0.2)(x)
-    conv1 = keras.layers.Conv1D(128, 8, border_mode='same')(x)
-    conv1 = keras.layers.normalization.BatchNormalization()(conv1)
-    conv1 = keras.layers.Activation('relu')(conv1)
+    print(x_train.shape)
 
-#    drop_out = Dropout(0.2)(conv1)
-    conv2 = keras.layers.Conv1D(256, 5, border_mode='same')(conv1)
-    conv2 = keras.layers.normalization.BatchNormalization()(conv2)
-    conv2 = keras.layers.Activation('relu')(conv2)
-
-    lstm_layer = keras.layers.LSTM(48)(conv2)
-    out = keras.layers.Dense(nb_classes, activation='softmax')(lstm_layer)
-
-    model = Model(input=x, output=out)
+    model = Sequential()
+    model.add(Bidirectional(LSTM(32, return_sequences=True), input_shape=x_train.shape[1:]))
+    model.add(BatchNormalization())
+    model.add(LSTM(32))
+    model.add(keras.layers.Dense(nb_classes, activation='softmax'))
 
     optimizer = keras.optimizers.Adam()
     model.compile(loss='categorical_crossentropy',
@@ -86,10 +64,10 @@ for each in flist:
 
     #Print the testing results which has the lowest training loss.
     log = pd.DataFrame(hist.history)
-    log.to_csv('./history/'+fname+'_FCN_LSTM_all_history.csv')
+    log.to_csv('./history/'+fname+'_BiDir_LSTM_all_history.csv')
 
     with open(all_result_file,"a") as f:
-        f.write(fname+", FCN_LSTM"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
+        f.write(fname+", BiDirLSTM"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
                 +str(log.loc[log['loss'].idxmin]['val_acc'])+"\n")
 
     # summarize history for accuracy
@@ -99,7 +77,7 @@ for each in flist:
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('./history/'+fname+'_FCN_LSTM_model_accuracy.png')
+    plt.savefig('./history/'+fname+'_BiDirLSTM_model_accuracy.png')
     plt.close()
     # summarize history for loss
     plt.plot(log['loss'])
@@ -108,4 +86,4 @@ for each in flist:
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('./history/'+fname+'_FCN_LSTM_model_loss.png')
+    plt.savefig('./history/'+fname+'_BiDirLSTM_model_loss.png')

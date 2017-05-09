@@ -24,8 +24,8 @@ def readucr(filename):
     X = data[:,1:]
     return X, Y
   
-nb_epochs = 200
-
+nb_epochs = 2000
+all_result_file = 'all_results.txt'
 
 #flist = ['Adiac', 'Beef', 'CBF', 'ChlorineConcentration', 'CinC_ECG_torso', 'Coffee', 'Cricket_X', 'Cricket_Y', 'Cricket_Z', 
 #'DiatomSizeReduction', 'ECGFiveDays', 'FaceAll', 'FaceFour', 'FacesUCR', '50words', 'FISH', 'Gun_Point', 'Haptics', 
@@ -43,8 +43,7 @@ for each in flist:
     
     y_train = (y_train - y_train.min())/(y_train.max()-y_train.min())*(nb_classes-1)
     y_test = (y_test - y_test.min())/(y_test.max()-y_test.min())*(nb_classes-1)
-    
-    
+
     Y_train = np_utils.to_categorical(y_train, nb_classes)
     Y_test = np_utils.to_categorical(y_test, nb_classes)
     
@@ -53,29 +52,28 @@ for each in flist:
     x_train = (x_train - x_train_mean)/(x_train_std)
      
     x_test = (x_test - x_train_mean)/(x_train_std)
-    x_train = x_train.reshape(x_train.shape + (1,1,))
-    x_test = x_test.reshape(x_test.shape + (1,1,))
+    x_train = x_train.reshape(x_train.shape + (1,))
+    x_test = x_test.reshape(x_test.shape + (1,))
 
     x = keras.layers.Input(x_train.shape[1:])
 #    drop_out = Dropout(0.2)(x)
-    conv1 = keras.layers.Conv2D(128, 8, 1, border_mode='same')(x)
+    conv1 = keras.layers.Conv1D(128, 8, border_mode='same')(x)
     conv1 = keras.layers.normalization.BatchNormalization()(conv1)
     conv1 = keras.layers.Activation('relu')(conv1)
     
 #    drop_out = Dropout(0.2)(conv1)
-    conv2 = keras.layers.Conv2D(256, 5, 1, border_mode='same')(conv1)
+    conv2 = keras.layers.Conv1D(256, 5, border_mode='same')(conv1)
     conv2 = keras.layers.normalization.BatchNormalization()(conv2)
     conv2 = keras.layers.Activation('relu')(conv2)
     
 #    drop_out = Dropout(0.2)(conv2)
-    conv3 = keras.layers.Conv2D(128, 3, 1, border_mode='same')(conv2)
+    conv3 = keras.layers.Conv1D(128, 3, border_mode='same')(conv2)
     conv3 = keras.layers.normalization.BatchNormalization()(conv3)
     conv3 = keras.layers.Activation('relu')(conv3)
     
-    full = keras.layers.pooling.GlobalAveragePooling2D()(conv3)    
+    full = keras.layers.pooling.GlobalAveragePooling1D()(conv3)
     out = keras.layers.Dense(nb_classes, activation='softmax')(full)
-    
-    
+
     model = Model(input=x, output=out)
      
     optimizer = keras.optimizers.Adam()
@@ -92,13 +90,11 @@ for each in flist:
 
     #Print the testing results which has the lowest training loss.
     log = pd.DataFrame(hist.history)
-    print(log.loc[log['loss'].idxmin]['loss'], log.loc[log['loss'].idxmin]['val_acc'])
+    log.to_csv('./history/'+fname+'_FCN_all_history.csv')
 
-    #eval = model.evaluate(x_test, Y_test, batch_size=batch_size)
-    #print(model.metrics)
-    #print('Test Score: ', eval[0])
-    #print('Test Accuracy: ', eval[1])
-    #print('Test Categorical Accuracy: ', eval[2])
+    with open(all_result_file,"a") as f:
+        f.write(fname+", FCN"+", "+str(log.loc[log['loss'].idxmin]['loss'])+", "
+                +str(log.loc[log['loss'].idxmin]['val_acc'])+"\n")
 
     # summarize history for accuracy
     plt.plot(log['acc'])
@@ -107,7 +103,8 @@ for each in flist:
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.savefig('./history/'+fname+'_FCN_model_accuracy.png')
+    plt.close()
     # summarize history for loss
     plt.plot(log['loss'])
     plt.plot(log['val_loss'])
@@ -115,4 +112,4 @@ for each in flist:
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plt.savefig('./history/'+fname+'_FCN_model_loss.png')
